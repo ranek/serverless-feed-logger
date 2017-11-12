@@ -1,0 +1,34 @@
+AWSTemplateFormatVersion : '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Automatically log the body of a web result at a set frequency.
+
+Parameters:
+  DownloadURL:
+    Type: String
+    Description: The URL of a page to automatically log.
+  Schedule:
+    Type: String
+    Default: rate(1 hour)
+    Description: A CloudWatch Event Schedule Expression at which to invoke this function; see http://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html.
+
+Resources:
+  ArchiverFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: archiver.lambda_handler
+      Runtime: python3.6
+      Timeout: 30
+      CodeUri: archiver.py
+      Environment:
+        Variables:
+          DOWNLOAD_URL: !Ref DownloadURL
+      Events:
+        ScheduledEvent:
+          Type: Schedule
+          Properties:
+            Schedule: !Ref Schedule
+
+Outputs:
+  LogDestination:
+    Description: CloudWatch Log Group to watch for saved data.
+    Value: !Join ['/', ['/aws/lambda', !Ref ArchiverFunction]]
